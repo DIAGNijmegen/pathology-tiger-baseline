@@ -1,0 +1,11 @@
+wholeslidedata:
+    default:
+        yaml_source: slidingwindowdata.yml
+        
+        annotation_parser:
+            shape: [128, 128]
+        
+        batch_shape:
+            batch_size: 2
+            shape: [128, 128, 3]
+            spacing: 0.5

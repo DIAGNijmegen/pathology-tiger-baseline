@@ -1,0 +1,19 @@
+hooknet:
+    default:
+        model:
+            input_shape@replace=true: [[1244,1244,3], [1244,1244,3]]
+            n_classes: 7
+            hook_indices@replace=true: [0, 4]
+            depth: 4
+            n_convs: 2
+            filter_size: 3
+            n_filters: 64
+            padding: valid
+            batch_norm: True
+            activation: 
+                module: tensorflow.keras.layers
+                attribute: LeakyReLU
+                alpha: 0.1
+            loss_weights: [0.75, 0.25]  
+            merge_type: 'concat'        
+            model_weights: segmodel/hooknetweights/ckpt

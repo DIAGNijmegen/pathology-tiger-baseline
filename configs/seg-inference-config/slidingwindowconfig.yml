@@ -1,0 +1,35 @@
+wholeslidedata:
+    default:
+        yaml_source: 
+            _: _
+            
+        image_sources:
+            folder: /input
+        
+        annotation_sources:
+            folder: /input/images
+            
+        associations: 
+            associator: 
+                module: association.py
+                attribute: single_file_association
+        
+        batch_shape:
+            batch_size: 1
+            shape: [[1244, 1244, 3], [1244, 1244, 3]]
+            y_shape: [2, 1030, 1030]
+            spacing: [0.5, 8.0]
+            
+        point_sampler:
+            attribute: CenterPointSampler
+          
+        patch_sampler:
+            center: True
+          
+        patch_label_sampler:
+            center: True
+          
+        sample_callbacks:
+            - module: wholeslidedata.samplers.callbacks
+              attribute: FitOutput
+              output_shape: [1030, 1030]  
