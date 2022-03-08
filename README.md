@@ -2,6 +2,8 @@
 
 This repository contains the code for the TIGER challenge baseline algorithm.
 
+![alt text](./pipeline.png)
+
 
 # Acknowledgement
 
