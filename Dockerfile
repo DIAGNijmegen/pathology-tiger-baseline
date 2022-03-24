@@ -1,4 +1,4 @@
-FROM ....
+FROM nvidia/cuda:11.1-devel-ubuntu18.04
 
 # FOLDERS and PERMISSIONS
 RUN groupadd -r algorithm && useradd -m --no-log-init -r -g algorithm algorithm
