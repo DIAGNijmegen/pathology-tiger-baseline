@@ -7,6 +7,7 @@ This repository contains the code for the TIGER challenge baseline algorithm.
 
 ## Weights for Faster-rcnn and Hooknet
 https://surfdrive.surf.nl/files/index.php/s/TAJY8FEFWsLgHj8
+Place the weights in de appropiated subfolders in models. See the readme.md files in the subfolders for more information
 
 # Acknowledgement
 
