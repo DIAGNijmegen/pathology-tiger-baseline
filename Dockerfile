@@ -34,7 +34,7 @@ RUN : \
 # Libraries
 RUN python -m pip install -U pip
 RUN pip install git+https://github.com/DIAGNijmegen/pathology-hooknet 
-RUN pip install git+https://github.com/DIAGNijmegen/pathology-whole-slide-data 
+RUN pip install git+https://github.com/DIAGNijmegen/pathology-whole-slide-data@216acd8a9166246f33c5996080e96a4d03e44402
 RUN pip install tensorflow-gpu==2.3.0
 RUN pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 RUN pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.9/index.html 
