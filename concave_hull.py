@@ -15,6 +15,8 @@ import cv2
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
 from utils import mm2_to_px, dist_to_px
 
+
+# code from: https://github.com/mdiener21/python-geospatial-analysis-cookbook/blob/master/ch08/code/alpha_shape.py
 def alpha_shape(points, alpha):
     def add_edge(edges, edge_points, coords, i, j):
         """
