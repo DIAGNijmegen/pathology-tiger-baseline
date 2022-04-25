@@ -268,6 +268,13 @@ class TIGERSegDet(object):
         wsa = WholeSlideAnnotation(f'tempoutput/bulkoutput/{slide_file[:-4]}.xml')
         if wsa.annotations:
             write_mask(wsi, wsa, spacing=0.5, suffix='_bulk.tif')
+        else:
+            print(f'No annotations in {slide_file_xml}')
+            self.stroma_to_mask()
+            self.detection_in_mask(slide_file)
+            write_json(0.0, f'{self.output_folder}/til-score.json')
+            sys.exit(0)
+            
         print('Wrote bulk to mask')
 
         """Write stroma within bulk to mask"""
