@@ -149,7 +149,7 @@ def concave_hull(input_file, output_dir, input_level, output_level, level_offset
     for polygon in polygons:
         if polygon.area < min_size_px:
             continue
-        polygon = polygon.buffer(buffersize)
+
 
         coordinates.append([[x[0] * 2 ** (input_level + level_offset - output_level),
                              x[1] * 2 ** (input_level + level_offset - output_level)] for x in polygon.boundary.coords[:-1]])
