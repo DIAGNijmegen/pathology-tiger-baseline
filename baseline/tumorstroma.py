@@ -1,33 +1,38 @@
-from .constants import BULK_CONFIG, BULK_XML_PATH
-from .concavehull import concave_hull
-from wholeslidedata.image.wholeslideimage import WholeSlideImage
+from wholeslidedata.accessories.asap.imagewriter import WholeSlideMaskWriter, write_mask
 from wholeslidedata.annotation.wholeslideannotation import WholeSlideAnnotation
-from wholeslidedata.accessories.asap.imagewriter import write_mask
+from wholeslidedata.image.wholeslideimage import WholeSlideImage
+from wholeslidedata.iterators import create_batch_iterator
+from wholeslidedata.source.configuration.config import insert_paths_into_config
+
+from .concavehull import concave_hull
+from .constants import BULK_CONFIG, BULK_MASK_PATH, BULK_XML_PATH, TUMOR_STROMA_MASK_PATH
 
 
-def create_tumor_bulk_mask(image_path, annotation_path):
-    wsi = WholeSlideImage(image_path, backend='asap')
+def _create_tumor_bulk_mask(image_path, annotation_path):
+    wsi = WholeSlideImage(image_path, backend="asap")
     wsa = WholeSlideAnnotation(annotation_path)
 
     if len(wsa.annotations) == 0:
-        raise RuntimeError('Could not generate valid tumor bulk')
+        raise RuntimeError("Could not generate valid tumor bulk")
 
-    print('Creating tumor mask')
-    write_mask(wsi, wsa, spacing=0.5, suffix='.tif')
+    print("Creating tumor mask")
+    write_mask(wsi, wsa, spacing=0.5, suffix=".tif")
 
 
 def _create_tumor_stroma_mask(segmentation_path, bulk_path):
     """Create a mask out of the stroma segmentations within the tumor bulk"""
-   
+
     user_config_dict = insert_paths_into_config(
         BULK_CONFIG, segmentation_path, bulk_path
-
     )
 
     bulk_iterator = create_batch_iterator(
-        mode="training",
+        mode="validation",
         user_config=user_config_dict["wholeslidedata"],
-        presets=("files", "slidingwindow",),
+        presets=(
+            "files",
+            "slidingwindow",
+        ),
         cpus=1,
         number_of_batches=-1,
         return_info=True,
@@ -35,15 +40,19 @@ def _create_tumor_stroma_mask(segmentation_path, bulk_path):
 
     """Write stromal tissue within the tumor bulk to a new tissue mask"""
     spacing = 0.5
-    tile_size = 1024  # always **2
+    tile_size = 512
 
-    with WholeSlideImage(segmentation_path, backend='asap') as wsi:
+    with WholeSlideImage(segmentation_path, backend="asap") as wsi:
         shape = wsi.shapes[wsi.get_level_from_spacing(spacing)]
         spacing = wsi.get_real_spacing(spacing)
 
     bulk_wsm_writer = WholeSlideMaskWriter()
-    bulk_wsm_writer.write('tumor_stroma_mask.tif', spacing=spacing, dimensions=shape, tile_shape=(tile_size, tile_size))
-
+    bulk_wsm_writer.write(
+        TUMOR_STROMA_MASK_PATH,
+        spacing=spacing,
+        dimensions=shape,
+        tile_shape=(tile_size, tile_size),
+    )
 
     for x_batch, y_batch, info in bulk_iterator:
 
@@ -71,17 +80,16 @@ def _create_tumor_stroma_mask(segmentation_path, bulk_path):
 
 def create_tumor_stroma_mask(segmentation_path):
 
-    # # create tumor bulk
-    # concave_hull(
-    #     input_file=segmentation_path,
-    #     output_dir="/home/user/tmp/",
-    #     input_level=6,
-    #     output_level=0,
-    #     level_offset=0,
-    #     alpha=0.07,
-    #     min_size=1.5,
-    #     bulk_class=1,
-    # )
-
-    create_tumor_bulk_mask(segmentation_path, BULK_XML_PATH)
-    create_tumor_stroma_mask()
+    # create tumor bulk
+    concave_hull(
+        input_file=segmentation_path,
+        output_dir="/home/user/tmp/",
+        input_level=6,
+        output_level=0,
+        level_offset=0,
+        alpha=0.07,
+        min_size=1.5,
+        bulk_class=1,
+    )
+    _create_tumor_bulk_mask(segmentation_path, BULK_XML_PATH)
+    _create_tumor_stroma_mask(segmentation_path, BULK_MASK_PATH)

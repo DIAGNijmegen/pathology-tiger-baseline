@@ -55,12 +55,6 @@ def non_max_suppression_fast(boxes, overlapThresh):
     return boxes[pick].astype("int")
 
 
-def dist_to_px(dist, spacing):
-    """distance in um (or rather same unit as the spacing)"""
-    dist_px = int(round(dist / spacing))
-    return dist_px
-
-
 def get_centerpoints(box, dist):
     """Returns centerpoints of box"""
     return (box[0] + dist, box[1] + dist)

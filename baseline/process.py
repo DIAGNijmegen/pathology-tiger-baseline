@@ -3,11 +3,14 @@ from pathlib import Path
 
 from wholeslidedata.source.configuration.config import get_paths
 
-from .constants import OUTPUT_FOLDER, SOURCE_CONFIG, SEGMENTATION_OUTPUT_PATH
+from .constants import (ASAP_DETECTION_OUTPUT, BULK_MASK_PATH, DETECTION_OUTPUT_PATH, OUTPUT_FOLDER,
+                        SEGMENTATION_OUTPUT_PATH, SOURCE_CONFIG, TILS_OUTPUT_PATH,
+                        TUMOR_STROMA_MASK_PATH)
 from .detection import run_detection
 from .segmentation import run_segmentation
 from .tilscore import create_til_score
 from .tumorstroma import create_tumor_stroma_mask
+from .utils import is_l1, write_json
 
 
 def create_lock_file(lock_file_path):
@@ -26,20 +29,18 @@ def process_l1(image_path, mask_path):
 
 
 def process_l2(image_path, mask_path):
-    # run_segmentation(image_path, mask_path)
+    run_segmentation(image_path, mask_path)
     create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
-    
-    # run_detection(image_path, )
-    # create_til_score()
-
-
-def is_l1():
-    return False
+    run_detection(image_path, TUMOR_STROMA_MASK_PATH)
+    create_til_score(image_path, ASAP_DETECTION_OUTPUT)
 
 def cleanup():
-    pass
-    # create empty json
-    # create 0 til score
+
+    det_result = dict(
+        type="Multiple points", points=[], version={"major": 1, "minor": 0}
+    )
+    write_json(det_result, DETECTION_OUTPUT_PATH)
+    write_json(0.0, TILS_OUTPUT_PATH)
 
 def main():
     print("Create output folder")
@@ -53,7 +54,7 @@ def main():
         try:
             create_lock_file(lock_file_path=lock_file_path)
             
-            if is_l1():
+            if is_l1(mask_path):
                 process_l1(image_path, mask_path)
             else:
                 process_l2(image_path, mask_path)

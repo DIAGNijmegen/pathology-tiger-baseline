@@ -15,7 +15,7 @@ from wholeslidedata.source.configuration.config import insert_paths_into_config
 from .nms import to_wsd
 from .utils import px_to_mm
 
-from .constants import DETECTION_CONFIG
+from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG
 
 SIZE = 128
 AUG = T.FixedSizeCrop((SIZE, SIZE), pad_value=0)
@@ -146,7 +146,7 @@ def inference(iterator, predictor, image_path):
 
     write_point_set(
         annotations,
-        f"/home/user/tmp/{Path(image_path).stem}.xml",
+        ASAP_DETECTION_OUTPUT,
         label_name="lymphocytes",
         label_color="blue",
     )
