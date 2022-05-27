@@ -10,6 +10,6 @@ wholeslidedata:
             shape: [128, 128]
         
         batch_shape:
-            batch_size: 2
+            batch_size: 128
             shape: [128, 128, 3]
             spacing: 0.5

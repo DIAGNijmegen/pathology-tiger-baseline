@@ -114,8 +114,9 @@ def inference(iterator, predictor, image_path):
 
     with WholeSlideImage(image_path) as wsi:
         spacing = wsi.get_real_spacing(0.5)
-
+    print(iterator.dataset.annotation_counts)
     for x_batch, y_batch, info in iterator:
+        print(x_batch.shape)
         predictions = predictor.predict_on_batch(x_batch)
         for idx, prediction in enumerate(predictions):
             point = info["sample_references"][idx]["point"]
