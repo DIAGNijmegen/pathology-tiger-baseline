@@ -23,17 +23,7 @@ def release_lock_file(lock_file_path):
     Path(lock_file_path).unlink(missing_ok=True)
 
 
-def process_l1(image_path, mask_path):
-    run_detection(image_path, mask_path)
-
-
-def process_l2(image_path):
-    create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
-    run_detection(image_path, TUMOR_STROMA_MASK_PATH)
-    create_til_score(image_path, ASAP_DETECTION_OUTPUT)
-
-def cleanup():
-
+def write_empty_files():
     det_result = dict(
         type="Multiple points", points=[], version={"major": 1, "minor": 0}
     )
@@ -66,14 +56,16 @@ def main():
             print('segmentation done')
 
             if is_l1(mask_path):
-                process_l1(image_path, mask_path)
+                run_detection(image_path, mask_path)
             else:
-                process_l2(image_path)
+                create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
+                run_detection(image_path, TUMOR_STROMA_MASK_PATH)
+                create_til_score(image_path, ASAP_DETECTION_OUTPUT)
 
         except Exception as e:
             print("Exception")
             print(e)
-            cleanup()
+            write_empty_files()
             print(traceback.format_exc())
         finally:
             release_lock_file(lock_file_path=lock_file_path)
