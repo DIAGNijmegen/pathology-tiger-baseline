@@ -1,6 +1,10 @@
 wholeslidedata:
     default:
-        yaml_source: slidingwindowdata.yml
+        image_sources:
+            path: 'not set'
+        
+        annotation_sources:
+            path: 'not set'
         
         annotation_parser:
             shape: [128, 128]

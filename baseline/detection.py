@@ -8,9 +8,10 @@ import os
 import json
 import copy
 import torch
-
+from wholeslidedata.source.configuration.config import insert_paths_into_config
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
-
+from wholeslidedata.iterators import create_batch_iterator
+from .constants import DETECTION_CONFIG
 import xml.etree.cElementTree as ET
 from xml.dom import minidom
 from write_annotations import write_point_set 
@@ -95,10 +96,10 @@ class Detectron2DetectionPredictor:
                 predictions[-1].append(prediction_record)
         return predictions
 
-def inference(iterator, weights_path, model_dir:str, slide_folder: str, prediction_folder:str,  output:str, threshold=0.0, nms_threshold=0.01):
+def inference(iterator, predictor, image_path):
 
     print('creating predictor...')
-    predictor = Detectron2DetectionPredictor(weights_path=weights_path, output_dir=model_dir, threshold=threshold, nms_threshold=nms_threshold)
+    
 
     print('predicting...')
     output_dict = {"type": 'Multiple points',
@@ -111,17 +112,10 @@ def inference(iterator, weights_path, model_dir:str, slide_folder: str, predicti
     annotations = []
     boxes = []
     
-    for x_batch, y_batch, info in iterator:
-        
-        filekey = info['sample_references'][0]['reference'].file_key
-        if current_image != filekey:
-                        
-            current_image = filekey
-            slide = slide_folder + filekey + '.tif'
-            with WholeSlideImage(slide) as wsi:
-                shape = wsi.shapes[wsi.get_level_from_spacing(0.5)]
-                spacing = wsi.get_real_spacing(0.5)
-        
+    with WholeSlideImage(image_path) as wsi:
+        spacing = wsi.get_real_spacing(0.5)
+
+    for x_batch, y_batch, info in iterator:        
         predictions = predictor.predict_on_batch(x_batch)
         for idx, prediction in enumerate(predictions):
             point = info["sample_references"][idx]["point"]
@@ -153,3 +147,25 @@ def inference(iterator, weights_path, model_dir:str, slide_folder: str, predicti
          json.dump(output_dict, outfile, indent=4)
 
     print('finished!')
+
+
+
+def run_detection(image_path, annotation_path):
+    user_config_dict = insert_paths_into_config(DETECTION_CONFIG, image_path, annotation_path)
+    predictor = Detectron2DetectionPredictor(weights_path=weights_path, output_dir=model_dir, threshold=0.1, nms_threshold=0.3)
+
+    iterator = create_batch_iterator(
+        mode="training",
+        user_config=user_config_dict['wholeslidedata'],
+        presets=("slidingwindow",),
+        cpus=1,
+        number_of_batches=-1,
+        return_info=True,
+    )
+
+    inference(
+        iterator,
+        predictor,
+        image_path,
+    )
+    iterator.stop()
