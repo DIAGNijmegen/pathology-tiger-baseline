@@ -16,13 +16,12 @@ TMP_SEGMENTATION_OUTPUT_PATH = TMP_FOLDER / SEGMENTATION_OUTPUT_PATH.name
 TMP_DETECTION_OUTPUT_PATH = TMP_FOLDER / DETECTION_OUTPUT_PATH.name
 TMP_TILS_SCORE_PATH = TMP_FOLDER / TILS_OUTPUT_PATH.name
 
-SOURCE_CONFIG = Path('configs/inputs.yml')
+SOURCE_CONFIG = _ALGORITHM_FOLDER / Path('configs/inputs.yml')
 
-HOOKNET_WEIGHTS = _ALGORITHM_FOLDER / 'configs' / 'segmentation'
-HOOKNET_CONFIG = Path("")
-SEGMENTATION_CONFIG = Path("")
+HOOKNET_CONFIG = _ALGORITHM_FOLDER / "configs" / "segmentation" / "hooknet_params.yml"
+SEGMENTATION_CONFIG = _ALGORITHM_FOLDER / "configs" / "segmentation" / "hooknet_segmentation.yml"
 
-DETECTION_WEIGHTS = Path("")
-DETECTION_CONFIG = Path("")
+DETECTION_CONFIG = _ALGORITHM_FOLDER / "configs" / "detection" / "detectron2_detection.yml"
 
-BULK_CONFIG = Path("")
+BULK_XML_PATH = Path('/home/user/tmp/tumorbulk.xml')
+BULK_CONFIG =_ALGORITHM_FOLDER / 'configs' / 'bulk' / 'bulk.yml'

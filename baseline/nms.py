@@ -1,9 +1,9 @@
-from wholeslidedata.image.wholeslideimagewriter import WholeSlideMaskWriter
+import numpy as np
+from wholeslidedata.annotation.structures import Point
 from wholeslidedata.annotation.wholeslideannotation import WholeSlideAnnotation
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
-from wholeslidedata.annotation.structures import Point
-from wholeslidedata.labels import Labels, Label
-import numpy as np
+from wholeslidedata.labels import Label
+
 
 def non_max_suppression_fast(boxes, overlapThresh):
     """Very efficient NMS function taken from pyimagesearch"""
@@ -15,13 +15,13 @@ def non_max_suppression_fast(boxes, overlapThresh):
     # this is important since we'll be doing a bunch of divisions
     if boxes.dtype.kind == "i":
         boxes = boxes.astype("float")
-    # initialize the list of picked indexes	
+    # initialize the list of picked indexes
     pick = []
     # grab the coordinates of the bounding boxes
-    x1 = boxes[:,0]
-    y1 = boxes[:,1]
-    x2 = boxes[:,2]
-    y2 = boxes[:,3]
+    x1 = boxes[:, 0]
+    y1 = boxes[:, 1]
+    x2 = boxes[:, 2]
+    y2 = boxes[:, 3]
     # compute the area of the bounding boxes and sort the bounding
     # boxes by the bottom-right y-coordinate of the bounding box
     area = (x2 - x1 + 1) * (y2 - y1 + 1)
@@ -47,54 +47,68 @@ def non_max_suppression_fast(boxes, overlapThresh):
         # compute the ratio of overlap
         overlap = (w * h) / area[idxs[:last]]
         # delete all indexes from the index list that have
-        idxs = np.delete(idxs, np.concatenate(([last],
-            np.where(overlap > overlapThresh)[0])))
+        idxs = np.delete(
+            idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0]))
+        )
     # return only the bounding boxes that were picked using the
     # integer data type
     return boxes[pick].astype("int")
 
+
 def dist_to_px(dist, spacing):
-    """ distance in um (or rather same unit as the spacing) """
+    """distance in um (or rather same unit as the spacing)"""
     dist_px = int(round(dist / spacing))
     return dist_px
 
+
 def get_centerpoints(box, dist):
     """Returns centerpoints of box"""
-    return (box[0]+dist, box[1]+dist)
+    return (box[0] + dist, box[1] + dist)
+
 
 def point_to_box(x, y, size):
     """Convert centerpoint to bounding box of fixed size"""
-    return np.array([x-size, y-size, x+size, y+size])
+    return np.array([x - size, y - size, x + size, y + size])
+
 
 def slide_nms(slide_path, wsa_path, tile_size):
     """Iterate over WholeSlideAnnotation and perform NMS. For this to properly work, tiles need to be larger than model inference patches."""
-    wsi = WholeSlideImage(slide_path, backend='asap')
+    wsi = WholeSlideImage(slide_path, backend="asap")
     wsa = WholeSlideAnnotation(wsa_path)
     shape = wsi.shapes[0]
-    
+
     center_nms_points = []
-    
+
     for y_pos in range(0, shape[1], tile_size):
         for x_pos in range(0, shape[0], tile_size):
-            wsa_patch = wsa.select_annotations(int(x_pos+tile_size//2), int(y_pos+tile_size//2), tile_size, tile_size)
+            wsa_patch = wsa.select_annotations(
+                int(x_pos + tile_size // 2),
+                int(y_pos + tile_size // 2),
+                tile_size,
+                tile_size,
+            )
             if wsa_patch:
                 wsa_patch_coords = [point.coordinates for point in wsa_patch]
                 if len(wsa_patch_coords) < 2:
                     continue
-                    
-                boxes = np.array([point_to_box(x[0], x[1], 8) for x in wsa_patch_coords])
+
+                boxes = np.array(
+                    [point_to_box(x[0], x[1], 8) for x in wsa_patch_coords]
+                )
                 nms_boxes = non_max_suppression_fast(boxes, 0.7)
                 for box in nms_boxes:
                     center_nms_points.append(get_centerpoints(box, 8))
     return center_nms_points
 
+
 def to_wsd(points):
     """Convert list of coordinates into WSD points"""
     new_points = []
     for i, point in enumerate(points):
-        p = Point(index=i, 
-                  annotation_path='', 
-                  label=Label('til', 1, color='blue'), 
-                  coordinates=[point])
+        p = Point(
+            index=i,
+            label=Label("til", 1, color="blue"),
+            coordinates=[point],
+        )
         new_points.append(p)
     return new_points

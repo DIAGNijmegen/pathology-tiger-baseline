@@ -3,7 +3,7 @@ from pathlib import Path
 
 from wholeslidedata.source.configuration.config import get_paths
 
-from .constants import OUTPUT_FOLDER, SOURCE_CONFIG
+from .constants import OUTPUT_FOLDER, SOURCE_CONFIG, SEGMENTATION_OUTPUT_PATH
 from .detection import run_detection
 from .segmentation import run_segmentation
 from .tilscore import create_til_score
@@ -20,35 +20,31 @@ def release_lock_file(lock_file_path):
     Path(lock_file_path).unlink(missing_ok=True)
 
 
-def create_output_folders():
-    Path(f"/output/images/breast-cancer-segmentation-for-tils").mkdir(
-        parents=True, exist_ok=True
-    )
-    # TODO
+def process_l1(image_path, mask_path):
+    run_segmentation(image_path, mask_path)
+    run_detection(image_path, mask_path)
 
 
-def process_l1():
-    run_segmentation()
-    run_detection()
-
-
-def process_l2():
-    run_segmentation()
-    create_tumor_stroma_mask()
-    run_detection()
-    create_til_score()
+def process_l2(image_path, mask_path):
+    # run_segmentation(image_path, mask_path)
+    create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
+    
+    # run_detection(image_path, )
+    # create_til_score()
 
 
 def is_l1():
-    return True
+    return False
 
+def cleanup():
+    pass
+    # create empty json
+    # create 0 til score
 
 def main():
     print("Create output folder")
-    create_output_folders()
-
-    for image_path, annotation_path in get_paths(SOURCE_CONFIG, preset="folders"):
-        print(f"PROCESSING: {image_path}, with {annotation_path}....")
+    for image_path, mask_path in get_paths(SOURCE_CONFIG, preset="folders"):
+        print(f"PROCESSING: {image_path}, with {mask_path}....")
 
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
         if lock_file_path.exists():
@@ -56,15 +52,16 @@ def main():
             continue
         try:
             create_lock_file(lock_file_path=lock_file_path)
-
+            
             if is_l1():
-                process_l1()
+                process_l1(image_path, mask_path)
             else:
-                process_l2()
+                process_l2(image_path, mask_path)
 
         except Exception as e:
             print("Exception")
             print(e)
+            cleanup()
             print(traceback.format_exc())
         finally:
             release_lock_file(lock_file_path=lock_file_path)

@@ -1,7 +1,3 @@
-import argparse
-import multiresolutionimageinterface as mir
-import glob
-import os
 import numpy as np
 from shapely.ops import cascaded_union, polygonize
 import shapely
@@ -10,10 +6,9 @@ import shapely.geometry as geometry
 import xml.etree.ElementTree as ET
 import skimage.morphology
 from scipy.spatial import Delaunay
-from pathlib import Path
 import cv2
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
-from utils import mm2_to_px, dist_to_px
+from .utils import mm2_to_px, dist_to_px
 
 
 # code from: https://github.com/mdiener21/python-geospatial-analysis-cookbook/blob/master/ch08/code/alpha_shape.py
@@ -143,17 +138,15 @@ def concave_hull(input_file, output_dir, input_level, output_level, level_offset
     else:
         polygons = list(concave_hull)
     
-    # write polygons to annotations and add buffer
-    buffersize = dist_to_px(250, spacing)    
+    # write polygons to annotations and add buffer 
     coordinates = []
     for polygon in polygons:
         if polygon.area < min_size_px:
             continue
 
-
         coordinates.append([[x[0] * 2 ** (input_level + level_offset - output_level),
                              x[1] * 2 ** (input_level + level_offset - output_level)] for x in polygon.boundary.coords[:-1]])
     asap_annot = create_asap_xml_from_coords(coordinates)
 
-    output_filename = os.path.basename(input_file)[:-4]
-    asap_annot.write(os.path.join(output_dir, output_filename + ".xml"))
+    output_path = '/home/user/tmp/tumorbulk.xml' 
+    asap_annot.write(output_path)
