@@ -20,7 +20,7 @@ BULK_MASK_PATH = TMP_FOLDER / "tumorbulk.tif"
 TUMOR_STROMA_MASK_PATH = TMP_FOLDER / "tumor_stroma_mask.tif"
 
 # CONFIGS
-SOURCE_CONFIG = _ALGORITHM_FOLDER / "configs" / "inputs.yml"
+GRAND_CHALLENGE_SOURCE_CONFIG = _ALGORITHM_FOLDER / "configs" / "grandchallengeinputs.yml"
 HOOKNET_CONFIG = _ALGORITHM_FOLDER / "configs" / "segmentation" / "hooknet_params.yml"
 SEGMENTATION_CONFIG = _ALGORITHM_FOLDER / "configs" / "segmentation" / "hooknet_segmentation.yml"
 DETECTION_CONFIG = _ALGORITHM_FOLDER / "configs" / "detection" / "detectron2_detection.yml"
