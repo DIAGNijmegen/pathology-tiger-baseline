@@ -12,11 +12,11 @@ from .constants import (
     TILS_OUTPUT_PATH,
     TUMOR_STROMA_MASK_PATH,
 )
-# from .detection import run_detection
-# from .tilscore import create_til_score
-# from .tumorstroma import create_tumor_stroma_mask
-# from .utils import is_l1, write_json
-# import subprocess
+from .detection import run_detection
+from .tilscore import create_til_score
+from .tumorstroma import create_tumor_stroma_mask
+from .utils import is_l1, write_json
+import subprocess
 import click
 
 
@@ -30,12 +30,12 @@ def release_lock_file(lock_file_path):
     Path(lock_file_path).unlink(missing_ok=True)
 
 
-# def write_empty_files():
-#     det_result = dict(
-#         type="Multiple points", points=[], version={"major": 1, "minor": 0}
-#     )
-#     write_json(det_result, DETECTION_OUTPUT_PATH)
-#     write_json(0.0, TILS_OUTPUT_PATH)
+def write_empty_files():
+    det_result = dict(
+        type="Multiple points", points=[], version={"major": 1, "minor": 0}
+    )
+    write_json(det_result, DETECTION_OUTPUT_PATH)
+    write_json(0.0, TILS_OUTPUT_PATH)
 
 
 def get_source_config(image_folder, mask_folder):
@@ -74,31 +74,31 @@ def main(
         try:
             create_lock_file(lock_file_path=lock_file_path)
 
-            # print("running segmentation")
-            # cmd = [
-            #     "python3",
-            #     "-m",
-            #     "baseline.segmentation",
-            #     f"--image_path={image_path}",
-            #     f"--mask_path={mask_path}",
-            # ]
+            print("running segmentation")
+            cmd = [
+                "python3",
+                "-m",
+                "baseline.segmentation",
+                f"--image_path={image_path}",
+                f"--mask_path={mask_path}",
+            ]
 
-            # p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
-            # p.wait()
-            # if p.stderr is not None:
-            #     print(
-            #         "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-            #     )
+            p.wait()
+            if p.stderr is not None:
+                print(
+                    "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
+                )
 
-            # print("segmentation done")
+            print("segmentation done")
 
-            # if is_l1(mask_path):
-            #     run_detection(image_path, mask_path)
-            # else:
-            #     create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
-            #     run_detection(image_path, TUMOR_STROMA_MASK_PATH)
-            #     create_til_score(image_path, ASAP_DETECTION_OUTPUT)
+            if is_l1(mask_path):
+                run_detection(image_path, mask_path)
+            else:
+                create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
+                run_detection(image_path, TUMOR_STROMA_MASK_PATH)
+                create_til_score(image_path, ASAP_DETECTION_OUTPUT)
 
         except Exception as e:
             print("Exception")
