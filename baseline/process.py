@@ -16,7 +16,6 @@ from .constants import (
     TMP_SEGMENTATION_OUTPUT_PATH,
     TUMOR_STROMA_MASK_PATH,
 )
-from .detection import run_detection
 from .tilscore import create_til_score
 from .tumorstroma import create_tumor_stroma_mask
 from .utils import is_l1, write_json
@@ -65,6 +64,51 @@ def delete_tmp_files():
             print('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
+def run_segmentation(image_path, mask_path):
+
+    SEGMENTATION_OUTPUT_PATH.parent.mkdir(exist_ok=True, parents=True)
+
+    print("running segmentation")
+    cmd = [
+        "python3",
+        "-u",
+        "-m",
+        "baseline.segmentation",
+        f"--image_path={image_path}",
+        f"--mask_path={mask_path}",
+        f"--output_folder={SEGMENTATION_OUTPUT_PATH.parent}",
+        f"--tmp_folder={TMP_SEGMENTATION_OUTPUT_PATH.parent}",
+    ]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+    p.wait()
+    if p.stderr is not None:
+        print(
+            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
+        )
+
+def run_detection(image_path, mask_path):
+
+    print("running detection")
+    cmd = [
+        "python3",
+        "-u",
+        "-m",
+        "baseline.detection",
+        f"--image_path={image_path}",
+        f"--mask_path={mask_path}",
+    ]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+
+    p.wait()
+    if p.stderr is not None:
+        print(
+            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
+        )
+
+
 @click.command()
 @click.option("--source_config", type=Path, required=False)
 @click.option("--image_folder", type=Path, required=False)
@@ -91,33 +135,11 @@ def main(
         try:
             create_lock_file(lock_file_path=lock_file_path)
             
-            SEGMENTATION_OUTPUT_PATH.parent.mkdir(exist_ok=True, parents=True)
-
-            print("running segmentation")
-            cmd = [
-                "python3",
-                "-u",
-                "-m",
-                "baseline.segmentation",
-                f"--image_path={image_path}",
-                f"--mask_path={mask_path}",
-                f"--output_folder={SEGMENTATION_OUTPUT_PATH.parent}",
-                f"--tmp_folder={TMP_SEGMENTATION_OUTPUT_PATH.parent}",
-            ]
-
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-            p.wait()
-            if p.stderr is not None:
-                print(
-                    "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-                )
-
-            print("segmentation done")
+            run_segmentation(image_path=image_path, mask_path=mask_path)
 
             if is_l1(mask_path):
                 print('L1')
-                run_detection(image_path, mask_path)
+                run_detection(image_path=image_path, mask_path=mask_path)
                 write_json(0.0, TILS_OUTPUT_PATH)
             else:
                 print('L2')
@@ -126,7 +148,7 @@ def main(
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
                 )
-                run_detection(image_path, TUMOR_STROMA_MASK_PATH)
+                run_detection(image_path=image_path, mask_path=TUMOR_STROMA_MASK_PATH)
                 create_til_score(image_path, ASAP_DETECTION_OUTPUT)
 
         except Exception as e:

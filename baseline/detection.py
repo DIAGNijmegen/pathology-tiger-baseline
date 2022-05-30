@@ -16,6 +16,7 @@ from .nms import to_wsd
 from .utils import px_to_mm
 import numpy as np
 from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG, DETECTION_OUTPUT_PATH
+import click
 
 SIZE = 128
 AUG = T.FixedSizeCrop((SIZE, SIZE), pad_value=0)
@@ -157,12 +158,15 @@ def inference(iterator, predictor, image_path):
     print("finished!")
 
 
-def run_detection(image_path, annotation_path):
+@click.command()
+@click.option("--image_path", type=Path, required=True)
+@click.option("--mask_path", type=Path, required=True)
+def run_detection(image_path, mask_path):
     
-    print(image_path, annotation_path)
+    print(image_path, mask_path)
 
     user_config_dict = insert_paths_into_config(
-        DETECTION_CONFIG, image_path, annotation_path
+        DETECTION_CONFIG, image_path, mask_path
     )
 
     predictor = Detectron2DetectionPredictor(
@@ -187,3 +191,8 @@ def run_detection(image_path, annotation_path):
         image_path,
     )
     iterator.stop()
+
+
+
+if __name__ == "__main__":
+    run_detection()
