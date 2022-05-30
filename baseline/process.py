@@ -2,7 +2,7 @@ import traceback
 from pathlib import Path
 
 from wholeslidedata.source.configuration.config import get_paths
-
+import os, shutil
 from .constants import (
     ASAP_DETECTION_OUTPUT,
     BULK_MASK_PATH,
@@ -12,6 +12,7 @@ from .constants import (
     SEGMENTATION_OUTPUT_PATH,
     GRAND_CHALLENGE_SOURCE_CONFIG,
     TILS_OUTPUT_PATH,
+    TMP_FOLDER,
     TMP_SEGMENTATION_OUTPUT_PATH,
     TUMOR_STROMA_MASK_PATH,
 )
@@ -52,12 +53,25 @@ def get_source_config(image_folder, mask_folder):
     }
 
 
+def delete_tmp_files():
+    for filename in os.listdir(str(TMP_FOLDER)):
+        file_path = os.path.join(str(TMP_FOLDER), filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+
 @click.command()
 @click.option("--source_config", type=Path, required=False)
 @click.option("--image_folder", type=Path, required=False)
 @click.option("--mask_folder", type=Path, required=False)
+@click.option("--gc", type=bool, default=True, required=False)
 def main(
-    source_config: Path = None, image_folder: Path = None, mask_folder: Path = None
+    source_config: Path = None, image_folder: Path = None, mask_folder: Path = None, gc: bool = True,
 ):
 
     if source_config is None and image_folder is None and mask_folder is None:
@@ -118,7 +132,11 @@ def main(
             write_empty_files()
             print(traceback.format_exc())
         finally:
-            SEGMENTATION_OUTPUT_PATH.rename(SEGMENTATION_OUTPUT_PATH.parent / (image_path.stem + '.tif'))
+            if not gc:
+                SEGMENTATION_OUTPUT_PATH.rename(SEGMENTATION_OUTPUT_PATH.parent / (image_path.stem + '.tif'))
+                DETECTION_OUTPUT_PATH.rename(DETECTION_OUTPUT_PATH.parent / (image_path.stem + '_detections.json'))
+                TILS_OUTPUT_PATH.rename(TILS_OUTPUT_PATH.parent / (image_path.stem + '_tils_score.json'))
+                delete_tmp_files()    
             release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
 
