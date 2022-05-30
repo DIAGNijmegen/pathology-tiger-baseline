@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+from baseline.constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG
 
 import detectron2.data.transforms as T
 import torch
@@ -15,7 +16,6 @@ from tqdm import tqdm
 from .nms import to_wsd
 from .utils import px_to_mm
 import numpy as np
-from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG, DETECTION_OUTPUT_PATH
 import click
 
 SIZE = 128
@@ -101,7 +101,7 @@ class Detectron2DetectionPredictor:
         return predictions
 
 
-def inference(iterator, predictor, image_path):
+def inference(iterator, predictor, image_path, output_path):
 
 
     print("predicting...")
@@ -152,7 +152,7 @@ def inference(iterator, predictor, image_path):
         label_color="blue",
     )
     
-    with open(DETECTION_OUTPUT_PATH, "w") as outfile:
+    with open(output_path, "w") as outfile:
         json.dump(output_dict, outfile, indent=4)
 
     print("finished!")
@@ -161,7 +161,8 @@ def inference(iterator, predictor, image_path):
 @click.command()
 @click.option("--image_path", type=Path, required=True)
 @click.option("--mask_path", type=Path, required=True)
-def run_detection(image_path, mask_path):
+@click.option("--output_path", type=Path, required=True)
+def run_detection(image_path, mask_path, output_path):
     
     print(image_path, mask_path)
 
@@ -186,9 +187,10 @@ def run_detection(image_path, mask_path):
     )
 
     inference(
-        iterator,
-        predictor,
-        image_path,
+        iterator=iterator,
+        predictor=predictor,
+        image_path=image_path,
+        output_path=output_path,
     )
     iterator.stop()
 

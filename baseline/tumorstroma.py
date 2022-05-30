@@ -5,7 +5,7 @@ from wholeslidedata.iterators import create_batch_iterator
 from wholeslidedata.source.configuration.config import insert_paths_into_config
 import numpy as np
 from .concavehull import concave_hull
-from .constants import BULK_CONFIG, BULK_MASK_PATH, BULK_XML_PATH, TUMOR_STROMA_MASK_PATH
+from .constants import BULK_CONFIG
 
 
 def _create_tumor_bulk_mask(image_path, annotation_path):

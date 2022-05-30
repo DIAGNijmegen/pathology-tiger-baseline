@@ -3,7 +3,7 @@ import os
 import numpy as np
 import glob
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
 
 

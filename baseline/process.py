@@ -3,24 +3,21 @@ from pathlib import Path
 
 from wholeslidedata.source.configuration.config import get_paths
 import os, shutil
-from .constants import (
-    ASAP_DETECTION_OUTPUT,
-    BULK_MASK_PATH,
-    BULK_XML_PATH,
-    DETECTION_OUTPUT_PATH,
-    OUTPUT_FOLDER,
-    SEGMENTATION_OUTPUT_PATH,
-    GRAND_CHALLENGE_SOURCE_CONFIG,
-    TILS_OUTPUT_PATH,
-    TMP_FOLDER,
-    TMP_SEGMENTATION_OUTPUT_PATH,
-    TUMOR_STROMA_MASK_PATH,
-)
 from .tilscore import create_til_score
 from .tumorstroma import create_tumor_stroma_mask
 from .utils import is_l1, write_json
 import subprocess
 import click
+from .constants import (
+    ASAP_DETECTION_OUTPUT,
+    BULK_MASK_PATH,
+    BULK_XML_PATH,
+    GRAND_CHALLENGE_SOURCE_CONFIG,
+    OUTPUT_FOLDER,
+    SEGMENTATION_OUTPUT_FOLDER,
+    TMP_FOLDER,
+    TUMOR_STROMA_MASK_PATH,
+)
 
 
 def create_lock_file(lock_file_path):
@@ -33,12 +30,12 @@ def release_lock_file(lock_file_path):
     Path(lock_file_path).unlink(missing_ok=True)
 
 
-def write_empty_files():
+def write_empty_files(detection_output_path, tils_output_path):
     det_result = dict(
         type="Multiple points", points=[], version={"major": 1, "minor": 0}
     )
-    write_json(det_result, DETECTION_OUTPUT_PATH)
-    write_json(0.0, TILS_OUTPUT_PATH)
+    write_json(det_result, detection_output_path)
+    write_json(0.0, tils_output_path)
 
 
 def get_source_config(image_folder, mask_folder):
@@ -61,12 +58,12 @@ def delete_tmp_files():
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
         except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
+            print("Failed to delete %s. Reason: %s" % (file_path, e))
 
 
-def run_segmentation(image_path, mask_path):
+def run_segmentation(image_path, mask_path, name):
 
-    SEGMENTATION_OUTPUT_PATH.parent.mkdir(exist_ok=True, parents=True)
+    SEGMENTATION_OUTPUT_FOLDER.mkdir(exist_ok=True, parents=True)
 
     print("running segmentation")
     cmd = [
@@ -76,19 +73,19 @@ def run_segmentation(image_path, mask_path):
         "baseline.segmentation",
         f"--image_path={image_path}",
         f"--mask_path={mask_path}",
-        f"--output_folder={SEGMENTATION_OUTPUT_PATH.parent}",
-        f"--tmp_folder={TMP_SEGMENTATION_OUTPUT_PATH.parent}",
+        f"--output_folder={SEGMENTATION_OUTPUT_FOLDER}",
+        f"--tmp_folder={TMP_FOLDER}",
+        f"--name={name}",
     ]
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     p.wait()
     if p.stderr is not None:
-        print(
-            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-        )
+        print("/n".join([line.decode("utf-8") for line in p.stderr.readlines()]))
 
-def run_detection(image_path, mask_path):
+
+def run_detection(image_path, mask_path, output_path):
 
     print("running detection")
     cmd = [
@@ -98,15 +95,14 @@ def run_detection(image_path, mask_path):
         "baseline.detection",
         f"--image_path={image_path}",
         f"--mask_path={mask_path}",
+        f"--output_path={output_path}",
     ]
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
     p.wait()
     if p.stderr is not None:
-        print(
-            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-        )
+        print("/n".join([line.decode("utf-8") for line in p.stderr.readlines()]))
 
 
 @click.command()
@@ -115,7 +111,10 @@ def run_detection(image_path, mask_path):
 @click.option("--mask_folder", type=Path, required=False)
 @click.option("--gc", type=bool, default=True, required=False)
 def main(
-    source_config: Path = None, image_folder: Path = None, mask_folder: Path = None, gc: bool = True,
+    source_config: Path = None,
+    image_folder: Path = None,
+    mask_folder: Path = None,
+    gc: bool = True,
 ):
 
     if source_config is None and image_folder is None and mask_folder is None:
@@ -128,42 +127,64 @@ def main(
     for image_path, mask_path in get_paths(source_config, preset="folders"):
         print(f"PROCESSING: {image_path}, with {mask_path}....")
 
+        segmentation_file_name = image_path.stem + "_tiger_baseline.tif"
+        segmentation_path = SEGMENTATION_OUTPUT_FOLDER / segmentation_file_name
+        if gc:
+            detection_output_path = OUTPUT_FOLDER / "detected-lymphocytes.json"
+            tils_output_path = OUTPUT_FOLDER / "til-score.json"
+        else:
+            detection_output_path = (
+                OUTPUT_FOLDER / f"{image_path.stem}_detected-lymphocytes.json"
+            )
+            tils_output_path = OUTPUT_FOLDER / f"{image_path.stem}_til-score.json"
+
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
         if lock_file_path.exists():
             print("Lock file exists, skipping inference.")
             continue
         try:
             create_lock_file(lock_file_path=lock_file_path)
-            
-            run_segmentation(image_path=image_path, mask_path=mask_path)
+
+            run_segmentation(
+                image_path=image_path, mask_path=mask_path, name=segmentation_file_name
+            )
 
             if is_l1(mask_path):
-                print('L1')
-                run_detection(image_path=image_path, mask_path=mask_path)
-                write_json(0.0, TILS_OUTPUT_PATH)
+                print("L1")
+                run_detection(
+                    image_path=image_path,
+                    mask_path=mask_path,
+                    output_path=detection_output_path,
+                )
+                write_json(0.0, tils_output_path)
             else:
-                print('L2')
+                print("L2")
                 create_tumor_stroma_mask(
-                    segmentation_path=SEGMENTATION_OUTPUT_PATH,
+                    segmentation_path=segmentation_path,
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
                 )
-                run_detection(image_path=image_path, mask_path=TUMOR_STROMA_MASK_PATH)
-                create_til_score(image_path, ASAP_DETECTION_OUTPUT)
+                run_detection(
+                    image_path=image_path,
+                    mask_path=TUMOR_STROMA_MASK_PATH,
+                    output_path=detection_output_path,
+                )
+                create_til_score(
+                    image_path=image_path,
+                    xml_path=ASAP_DETECTION_OUTPUT,
+                    output_path=tils_output_path,
+                )
 
         except Exception as e:
             print("Exception")
             print(e)
-            write_empty_files()
+            write_empty_files(
+                detection_output_path=detection_output_path,
+                tils_output_path=tils_output_path,
+            )
             print(traceback.format_exc())
         finally:
-            if not gc:
-                print('renaming files...')
-                SEGMENTATION_OUTPUT_PATH.rename(SEGMENTATION_OUTPUT_PATH.parent / (image_path.stem + '.tif'))
-                DETECTION_OUTPUT_PATH.rename(DETECTION_OUTPUT_PATH.parent / (image_path.stem + '_detections.json'))
-                TILS_OUTPUT_PATH.rename(TILS_OUTPUT_PATH.parent / (image_path.stem + '_tils_score.json'))
-                print('deleting tmp files')
-                delete_tmp_files()    
+            delete_tmp_files()
             release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
 

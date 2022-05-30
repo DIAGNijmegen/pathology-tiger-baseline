@@ -8,8 +8,6 @@ import skimage.morphology
 from scipy.spatial import Delaunay
 import cv2
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
-
-from baseline.constants import BULK_XML_PATH
 from .utils import mm2_to_px, dist_to_px
 
 
