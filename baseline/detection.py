@@ -11,7 +11,7 @@ from wholeslidedata.accessories.asap.annotationwriter import write_point_set
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
 from wholeslidedata.iterators import create_batch_iterator
 from wholeslidedata.source.configuration.config import insert_paths_into_config
-
+from tqdm import tqdm
 from .nms import to_wsd
 from .utils import px_to_mm
 
@@ -115,8 +115,7 @@ def inference(iterator, predictor, image_path):
     with WholeSlideImage(image_path) as wsi:
         spacing = wsi.get_real_spacing(0.5)
     print(iterator.dataset.annotation_counts)
-    for x_batch, y_batch, info in iterator:
-        print(x_batch.shape)
+    for x_batch, y_batch, info in tqdm(iterator):
         predictions = predictor.predict_on_batch(x_batch)
         for idx, prediction in enumerate(predictions):
             point = info["sample_references"][idx]["point"]
