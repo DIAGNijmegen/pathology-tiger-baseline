@@ -116,8 +116,10 @@ def main(
             print("segmentation done")
 
             if is_l1(mask_path):
+                print('L1')
                 run_detection(image_path, mask_path)
             else:
+                print('L2')
                 create_tumor_stroma_mask(
                     segmentation_path=SEGMENTATION_OUTPUT_PATH,
                     bulk_xml_path=BULK_XML_PATH,
