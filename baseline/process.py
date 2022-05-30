@@ -118,6 +118,7 @@ def main(
             write_empty_files()
             print(traceback.format_exc())
         finally:
+            (OUTPUT_FOLDER / "segmentation.tif").rename(OUTPUT_FOLDER / (image_path.stem + '.tif'))
             release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
 

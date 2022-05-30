@@ -9,6 +9,7 @@ import click
 from .constants import (
     HOOKNET_CONFIG,
     SEGMENTATION_CONFIG,
+    SEGMENTATION_OUTPUT_PATH,
 )
 
 
@@ -19,7 +20,7 @@ from .constants import (
 @click.option("--tmp_folder", type=Path, required=True)
 def run_segmentation(image_path, mask_path, output_folder, tmp_folder):
     files = [
-        {"name": image_path.stem + "_tiger_baseline.tif", "type": MaskType.PREDICTION}
+        {"name": SEGMENTATION_OUTPUT_PATH.name, "type": MaskType.PREDICTION}
     ]
     model = create_hooknet(HOOKNET_CONFIG)
     user_config_dict = insert_paths_into_config(
