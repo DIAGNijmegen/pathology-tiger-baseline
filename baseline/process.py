@@ -118,6 +118,7 @@ def main(
             if is_l1(mask_path):
                 print('L1')
                 run_detection(image_path, mask_path)
+                write_json(0.0, TILS_OUTPUT_PATH)
             else:
                 print('L2')
                 create_tumor_stroma_mask(
