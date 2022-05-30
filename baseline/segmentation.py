@@ -5,6 +5,7 @@ from wholeslidedata.source.configuration.config import insert_paths_into_config
 from hooknet.inference.apply import _execute_inference_single
 from hooknet.inference.writing import MaskType
 import click
+import numpy as np
 
 from .constants import (
     HOOKNET_CONFIG,
@@ -36,6 +37,7 @@ def run_segmentation(image_path, mask_path, output_folder, tmp_folder):
         ),
         cpus=1,
         number_of_batches=-1,
+        buffer_dtype=np.uint8,
     )
 
     print("Run inference")

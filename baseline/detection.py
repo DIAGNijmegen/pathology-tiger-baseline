@@ -14,7 +14,7 @@ from wholeslidedata.source.configuration.config import insert_paths_into_config
 from tqdm import tqdm
 from .nms import to_wsd
 from .utils import px_to_mm
-
+import numpy as np
 from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG, DETECTION_OUTPUT_PATH
 
 SIZE = 128
@@ -178,6 +178,7 @@ def run_detection(image_path, annotation_path):
         cpus=1,
         number_of_batches=-1,
         return_info=True,
+        buffer_dtype=np.uint8,
     )
 
     inference(

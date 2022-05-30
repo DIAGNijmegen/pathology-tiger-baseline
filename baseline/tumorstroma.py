@@ -3,7 +3,7 @@ from wholeslidedata.annotation.wholeslideannotation import WholeSlideAnnotation
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
 from wholeslidedata.iterators import create_batch_iterator
 from wholeslidedata.source.configuration.config import insert_paths_into_config
-
+import numpy as np
 from .concavehull import concave_hull
 from .constants import BULK_CONFIG, BULK_MASK_PATH, BULK_XML_PATH, TUMOR_STROMA_MASK_PATH
 
@@ -36,6 +36,7 @@ def _create_tumor_stroma_mask(segmentation_path, bulk_path):
         cpus=1,
         number_of_batches=-1,
         return_info=True,
+        buffer_dtype=np.uint8,
     )
 
     """Write stromal tissue within the tumor bulk to a new tissue mask"""

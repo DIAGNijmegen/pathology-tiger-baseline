@@ -133,9 +133,11 @@ def main(
             print(traceback.format_exc())
         finally:
             if not gc:
+                print('renaming files...')
                 SEGMENTATION_OUTPUT_PATH.rename(SEGMENTATION_OUTPUT_PATH.parent / (image_path.stem + '.tif'))
                 DETECTION_OUTPUT_PATH.rename(DETECTION_OUTPUT_PATH.parent / (image_path.stem + '_detections.json'))
                 TILS_OUTPUT_PATH.rename(TILS_OUTPUT_PATH.parent / (image_path.stem + '_tils_score.json'))
+                print('deleting tmp files')
                 delete_tmp_files()    
             release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
