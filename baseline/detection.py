@@ -15,7 +15,7 @@ from wholeslidedata.source.configuration.config import insert_paths_into_config
 from .nms import to_wsd
 from .utils import px_to_mm
 
-from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG
+from .constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG, DETECTION_OUTPUT_PATH
 
 SIZE = 128
 AUG = T.FixedSizeCrop((SIZE, SIZE), pad_value=0)
@@ -151,9 +151,8 @@ def inference(iterator, predictor, image_path):
         label_name="lymphocytes",
         label_color="blue",
     )
-
-    output_path = f"/output/detected-lymphocytes.json"
-    with open(output_path, "w") as outfile:
+    
+    with open(DETECTION_OUTPUT_PATH, "w") as outfile:
         json.dump(output_dict, outfile, indent=4)
 
     print("finished!")

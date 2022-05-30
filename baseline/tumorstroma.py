@@ -78,12 +78,12 @@ def _create_tumor_stroma_mask(segmentation_path, bulk_path):
     bulk_iterator.stop()
 
 
-def create_tumor_stroma_mask(segmentation_path):
+def create_tumor_stroma_mask(segmentation_path, bulk_xml_path, bulk_mask_path):
 
     # create tumor bulk
     concave_hull(
         input_file=segmentation_path,
-        output_dir="/home/user/tmp/",
+        output_file=bulk_xml_path,
         input_level=6,
         output_level=0,
         level_offset=0,
@@ -91,5 +91,5 @@ def create_tumor_stroma_mask(segmentation_path):
         min_size=1.5,
         bulk_class=1,
     )
-    _create_tumor_bulk_mask(segmentation_path, BULK_XML_PATH)
-    _create_tumor_stroma_mask(segmentation_path, BULK_MASK_PATH)
+    _create_tumor_bulk_mask(segmentation_path, bulk_xml_path)
+    _create_tumor_stroma_mask(segmentation_path, bulk_mask_path)

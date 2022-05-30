@@ -5,11 +5,14 @@ from wholeslidedata.source.configuration.config import get_paths
 
 from .constants import (
     ASAP_DETECTION_OUTPUT,
+    BULK_MASK_PATH,
+    BULK_XML_PATH,
     DETECTION_OUTPUT_PATH,
     OUTPUT_FOLDER,
     SEGMENTATION_OUTPUT_PATH,
     GRAND_CHALLENGE_SOURCE_CONFIG,
     TILS_OUTPUT_PATH,
+    TMP_SEGMENTATION_OUTPUT_PATH,
     TUMOR_STROMA_MASK_PATH,
 )
 from .detection import run_detection
@@ -73,14 +76,19 @@ def main(
             continue
         try:
             create_lock_file(lock_file_path=lock_file_path)
+            
+            SEGMENTATION_OUTPUT_PATH.parent.mkdir(exist_ok=True, parents=True)
 
             print("running segmentation")
             cmd = [
                 "python3",
+                "-u",
                 "-m",
                 "baseline.segmentation",
                 f"--image_path={image_path}",
                 f"--mask_path={mask_path}",
+                f"--output_folder={SEGMENTATION_OUTPUT_PATH.parent}",
+                f"--tmp_folder={TMP_SEGMENTATION_OUTPUT_PATH.parent}",
             ]
 
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -96,7 +104,11 @@ def main(
             if is_l1(mask_path):
                 run_detection(image_path, mask_path)
             else:
-                create_tumor_stroma_mask(SEGMENTATION_OUTPUT_PATH)
+                create_tumor_stroma_mask(
+                    segmentation_path=SEGMENTATION_OUTPUT_PATH,
+                    bulk_xml_path=BULK_XML_PATH,
+                    bulk_mask_path=BULK_MASK_PATH,
+                )
                 run_detection(image_path, TUMOR_STROMA_MASK_PATH)
                 create_til_score(image_path, ASAP_DETECTION_OUTPUT)
 

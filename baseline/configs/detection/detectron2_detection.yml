@@ -13,3 +13,6 @@ wholeslidedata:
             batch_size: 128
             shape: [128, 128, 3]
             spacing: 0.5
+
+        dataset:
+            copy_path: /home/user/data/

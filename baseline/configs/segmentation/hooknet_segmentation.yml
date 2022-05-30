@@ -12,6 +12,9 @@ wholeslidedata:
             y_shape: [2, 1030, 1030]
             spacing: [0.5, 8.0]
             
+        dataset:
+            copy_path: /home/user/data/
+            
         point_sampler:
             attribute: CenterPointSampler
           

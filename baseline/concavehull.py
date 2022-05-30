@@ -8,6 +8,8 @@ import skimage.morphology
 from scipy.spatial import Delaunay
 import cv2
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
+
+from baseline.constants import BULK_XML_PATH
 from .utils import mm2_to_px, dist_to_px
 
 
@@ -84,9 +86,13 @@ def calc_ratio(patch):
     ratio_patch = patch.copy()
     ratio_patch[ratio_patch > 1] = 1
     counts = np.unique(ratio_patch, return_counts=True)
-    return (100 / counts[1][0]) * counts[1][1]
+    try:
+        return (100 / counts[1][0]) * counts[1][1]
+    except IndexError:
+        print('Could not calculate ratio, returning 0')
+        return 0
 
-def concave_hull(input_file, output_dir, input_level, output_level, level_offset, alpha, min_size, bulk_class=1):
+def concave_hull(input_file, output_file, input_level, output_level, level_offset, alpha, min_size, bulk_class=1):
     
     wsi = WholeSlideImage(input_file, backend='asap')
 
@@ -148,5 +154,4 @@ def concave_hull(input_file, output_dir, input_level, output_level, level_offset
                              x[1] * 2 ** (input_level + level_offset - output_level)] for x in polygon.boundary.coords[:-1]])
     asap_annot = create_asap_xml_from_coords(coordinates)
 
-    output_path = '/home/user/tmp/tumorbulk.xml' 
-    asap_annot.write(output_path)
+    asap_annot.write(output_file)

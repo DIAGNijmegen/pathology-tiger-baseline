@@ -9,24 +9,25 @@ import click
 from .constants import (
     HOOKNET_CONFIG,
     SEGMENTATION_CONFIG,
-    TMP_SEGMENTATION_OUTPUT_PATH,
-    SEGMENTATION_OUTPUT_PATH,
 )
 
 
 @click.command()
 @click.option("--image_path", type=Path, required=True)
 @click.option("--mask_path", type=Path, required=True)
-def run_segmentation(image_path, mask_path):
-    files = [{"name": 'segmentation.tif', "type": MaskType.PREDICTION}]
+@click.option("--output_folder", type=Path, required=True)
+@click.option("--tmp_folder", type=Path, required=True)
+def run_segmentation(image_path, mask_path, output_folder, tmp_folder):
+    files = [
+        {"name": image_path.stem + "_tiger_baseline.tif", "type": MaskType.PREDICTION}
+    ]
     model = create_hooknet(HOOKNET_CONFIG)
     user_config_dict = insert_paths_into_config(
         SEGMENTATION_CONFIG, image_path, mask_path
-
     )
 
     iterator = create_batch_iterator(
-        mode='validation',
+        mode="validation",
         user_config=user_config_dict["wholeslidedata"],
         presets=(
             "files",
@@ -42,8 +43,8 @@ def run_segmentation(image_path, mask_path):
         model=model,
         image_path=image_path,
         files=files,
-        output_folder=SEGMENTATION_OUTPUT_PATH.parent,
-        tmp_folder=TMP_SEGMENTATION_OUTPUT_PATH.parent,
+        output_folder=output_folder,
+        tmp_folder=tmp_folder,
     )
     iterator.stop()
 
