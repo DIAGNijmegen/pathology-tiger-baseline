@@ -155,8 +155,6 @@ def main(
                 tmp_folder=TMP_FOLDER,
                 name=segmentation_file_name,
             )
-            K.clear_session()
-            del segmentation_model 
             gc.collect()    
 
             if is_l1(mask_path):
