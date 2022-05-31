@@ -99,12 +99,12 @@ def tf_be_silent():
 @click.option("--source_config", type=Path, required=False)
 @click.option("--image_folder", type=Path, required=False)
 @click.option("--mask_folder", type=Path, required=False)
-@click.option("--gc", type=bool, default=True, required=False)
+@click.option("--grandchallenge", type=bool, default=True, required=False)
 def main(
     source_config: Path = None,
     image_folder: Path = None,
     mask_folder: Path = None,
-    gc: bool = True,
+    grandchallenge: bool = True,
 ):
 
     set_tf_gpu_config()
@@ -130,7 +130,7 @@ def main(
 
         segmentation_file_name = image_path.stem + "_tiger_baseline.tif"
         segmentation_path = SEGMENTATION_OUTPUT_FOLDER / segmentation_file_name
-        if gc:
+        if grandchallenge:
             detection_output_path = OUTPUT_FOLDER / "detected-lymphocytes.json"
             tils_output_path = OUTPUT_FOLDER / "til-score.json"
         else:
@@ -155,6 +155,9 @@ def main(
                 tmp_folder=TMP_FOLDER,
                 name=segmentation_file_name,
             )
+            if grandchallenge:
+                K.clear_session()
+                del segmentation_model 
             gc.collect()    
 
             if is_l1(mask_path):
