@@ -24,7 +24,9 @@ from .constants import (
     TUMOR_STROMA_MASK_PATH,
 )
 import tensorflow as tf
+import tensorflow.keras.backend as K
 import torch
+import gc
 
 
 def create_lock_file(lock_file_path):
@@ -153,6 +155,9 @@ def main(
                 tmp_folder=TMP_FOLDER,
                 name=segmentation_file_name,
             )
+            K.clear_session()
+            del segmentation_model 
+            gc.collect()    
 
             if is_l1(mask_path):
                 print("L1")
@@ -162,6 +167,7 @@ def main(
                     mask_path=mask_path,
                     output_path=detection_output_path,
                 )
+                gc.collect()
                 write_json(0.0, tils_output_path)
             else:
                 print("L2")
@@ -170,12 +176,14 @@ def main(
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
                 )
+                gc.collect()
                 run_detection(
                     model=detection_model,
                     image_path=image_path,
                     mask_path=TUMOR_STROMA_MASK_PATH,
                     output_path=detection_output_path,
                 )
+                gc.collect()
                 create_til_score(
                     image_path=image_path,
                     xml_path=ASAP_DETECTION_OUTPUT,
