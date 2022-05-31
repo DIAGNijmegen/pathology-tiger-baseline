@@ -3,21 +3,28 @@ from pathlib import Path
 
 from wholeslidedata.source.configuration.config import get_paths
 import os, shutil
+
+from baseline.wsdetectron2 import Detectron2DetectionPredictor
 from .tilscore import create_til_score
 from .tumorstroma import create_tumor_stroma_mask
 from .utils import is_l1, write_json
-import subprocess
+from .segmentation import run_segmentation
+from .detection import run_detection
 import click
+from hooknet.configuration.config import create_hooknet
 from .constants import (
     ASAP_DETECTION_OUTPUT,
     BULK_MASK_PATH,
     BULK_XML_PATH,
     GRAND_CHALLENGE_SOURCE_CONFIG,
+    HOOKNET_CONFIG,
     OUTPUT_FOLDER,
     SEGMENTATION_OUTPUT_FOLDER,
     TMP_FOLDER,
     TUMOR_STROMA_MASK_PATH,
 )
+import tensorflow as tf
+import torch
 
 
 def create_lock_file(lock_file_path):
@@ -61,48 +68,29 @@ def delete_tmp_files():
             print("Failed to delete %s. Reason: %s" % (file_path, e))
 
 
-def run_segmentation(image_path, mask_path, name):
-
-    SEGMENTATION_OUTPUT_FOLDER.mkdir(exist_ok=True, parents=True)
-
-    print("running segmentation")
-    cmd = [
-        "python3",
-        "-u",
-        "-m",
-        "baseline.segmentation",
-        f"--image_path={image_path}",
-        f"--mask_path={mask_path}",
-        f"--output_folder={SEGMENTATION_OUTPUT_FOLDER}",
-        f"--tmp_folder={TMP_FOLDER}",
-        f"--name={name}",
-    ]
-
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-    p.wait()
-    if p.stderr is not None:
-        print("/n".join([line.decode("utf-8") for line in p.stderr.readlines()]))
+def set_tf_gpu_config():
+    """Hard-coded GPU limit to balance between tensorflow and Pytorch"""
+    gpus = tf.config.list_physical_devices("GPU")
+    if gpus:
+        try:
+            tf.config.set_logical_device_configuration(
+                gpus[0], [tf.config.LogicalDeviceConfiguration(memory_limit=6024)]
+            )
+            logical_gpus = tf.config.list_logical_devices("GPU")
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+        except RuntimeError as e:
+            # Virtual devices must be set before GPUs have been initialized
+            print(e)
 
 
-def run_detection(image_path, mask_path, output_path):
-
-    print("running detection")
-    cmd = [
-        "python3",
-        "-u",
-        "-m",
-        "baseline.detection",
-        f"--image_path={image_path}",
-        f"--mask_path={mask_path}",
-        f"--output_path={output_path}",
-    ]
-
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
-    p.wait()
-    if p.stderr is not None:
-        print("/n".join([line.decode("utf-8") for line in p.stderr.readlines()]))
+def tf_be_silent():
+    """Surpress exessive TF warnings"""
+    try:
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+        tf.get_logger().setLevel("ERROR")
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+    except Exception as ex:
+        print("failed to silence tf warnings:", str(ex))
 
 
 @click.command()
@@ -116,6 +104,17 @@ def main(
     mask_folder: Path = None,
     gc: bool = True,
 ):
+
+    set_tf_gpu_config()
+    tf_be_silent()
+    torch.cuda.set_per_process_memory_fraction(0.55, 0)
+
+    segmentation_model = create_hooknet(HOOKNET_CONFIG)
+    detection_model = Detectron2DetectionPredictor(
+        output_dir="/home/user/tmp/",
+        threshold=0.1,
+        nms_threshold=0.3,
+    )
 
     if source_config is None and image_folder is None and mask_folder is None:
         source_config = GRAND_CHALLENGE_SOURCE_CONFIG
@@ -145,13 +144,20 @@ def main(
         try:
             create_lock_file(lock_file_path=lock_file_path)
 
+            SEGMENTATION_OUTPUT_FOLDER.mkdir(exist_ok=True, parents=True)
             run_segmentation(
-                image_path=image_path, mask_path=mask_path, name=segmentation_file_name
+                model=segmentation_model,
+                image_path=image_path,
+                mask_path=mask_path,
+                output_folder=SEGMENTATION_OUTPUT_FOLDER,
+                tmp_folder=TMP_FOLDER,
+                name=segmentation_file_name,
             )
 
             if is_l1(mask_path):
                 print("L1")
                 run_detection(
+                    model=detection_model,
                     image_path=image_path,
                     mask_path=mask_path,
                     output_path=detection_output_path,
@@ -165,6 +171,7 @@ def main(
                     bulk_mask_path=BULK_MASK_PATH,
                 )
                 run_detection(
+                    model=detection_model,
                     image_path=image_path,
                     mask_path=TUMOR_STROMA_MASK_PATH,
                     output_path=detection_output_path,
