@@ -109,13 +109,12 @@ def main(
 
     set_tf_gpu_config()
     tf_be_silent()
+    segmentation_model = create_hooknet(HOOKNET_CONFIG)
     torch.cuda.set_per_process_memory_fraction(0.55, 0)
 
     if grandchallenge:
-        segmentation_model = None
         detection_model = None
     else:
-        segmentation_model = create_hooknet(HOOKNET_CONFIG)
         detection_model = Detectron2DetectionPredictor(
             output_dir="/home/user/tmp/",
             threshold=0.1,
@@ -144,11 +143,12 @@ def main(
             tils_output_path = OUTPUT_FOLDER / f"{image_path.stem}_til-score.json"
 
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
-        if lock_file_path.exists():
+        if not grandchallenge and lock_file_path.exists():
             print("Lock file exists, skipping inference.")
             continue
         try:
-            create_lock_file(lock_file_path=lock_file_path)
+            if not grandchallenge:
+                create_lock_file(lock_file_path=lock_file_path)
 
             SEGMENTATION_OUTPUT_FOLDER.mkdir(exist_ok=True, parents=True)
             run_segmentation(
@@ -159,9 +159,6 @@ def main(
                 tmp_folder=TMP_FOLDER,
                 name=segmentation_file_name,
             )
-            if grandchallenge:
-                K.clear_session()
-                del segmentation_model 
             gc.collect()    
 
             if is_l1(mask_path):
@@ -204,8 +201,9 @@ def main(
             )
             print(traceback.format_exc())
         finally:
-            delete_tmp_files()
-            release_lock_file(lock_file_path=lock_file_path)
+            if not grandchallenge:
+                delete_tmp_files()
+                release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
 
 
