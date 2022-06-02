@@ -109,7 +109,6 @@ def main(
 
     set_tf_gpu_config()
     tf_be_silent()
-    segmentation_model = create_hooknet(HOOKNET_CONFIG)
     torch.cuda.set_per_process_memory_fraction(0.55, 0)
 
     if grandchallenge:
