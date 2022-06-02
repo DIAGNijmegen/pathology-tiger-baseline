@@ -45,8 +45,12 @@ def inference(iterator, predictor, image_path, output_path):
             for detections in prediction:
                 x, y, label, confidence = detections.values()
 
+                if x == 128 or y == 128:
+                    continue
+
                 if y_batch[idx][y][x] == 0:
                     continue
+                
                 x += c
                 y += r
                 prediction_record = {
