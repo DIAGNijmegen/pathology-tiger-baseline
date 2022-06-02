@@ -1,13 +1,17 @@
 import json
-from baseline.constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG
+
+import numpy as np
+from tqdm import tqdm
 from wholeslidedata.accessories.asap.annotationwriter import write_point_set
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
 from wholeslidedata.iterators import create_batch_iterator
 from wholeslidedata.source.configuration.config import insert_paths_into_config
-from tqdm import tqdm
+
+from baseline.constants import ASAP_DETECTION_OUTPUT, DETECTION_CONFIG
+from baseline.wsdetectron2 import Detectron2DetectionPredictor
+
 from .nms import to_wsd
 from .utils import px_to_mm
-import numpy as np
 
 
 def inference(iterator, predictor, image_path, output_path):
@@ -24,6 +28,14 @@ def inference(iterator, predictor, image_path, output_path):
     with WholeSlideImage(image_path) as wsi:
         spacing = wsi.get_real_spacing(0.5)
     print(iterator.dataset.annotation_counts)
+
+    if predictor is None:
+        predictor = Detectron2DetectionPredictor(
+            output_dir="/home/user/tmp/",
+            threshold=0.1,
+            nms_threshold=0.3,
+        )
+
     for x_batch, y_batch, info in tqdm(iterator):
         predictions = predictor.predict_on_batch(x_batch)
         for idx, prediction in enumerate(predictions):

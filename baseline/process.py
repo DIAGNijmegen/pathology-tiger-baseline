@@ -109,14 +109,19 @@ def main(
 
     set_tf_gpu_config()
     tf_be_silent()
+    segmentation_model = create_hooknet(HOOKNET_CONFIG)
     torch.cuda.set_per_process_memory_fraction(0.55, 0)
 
-    segmentation_model = create_hooknet(HOOKNET_CONFIG)
-    detection_model = Detectron2DetectionPredictor(
-        output_dir="/home/user/tmp/",
-        threshold=0.1,
-        nms_threshold=0.3,
-    )
+    if grandchallenge:
+        segmentation_model = None
+        detection_model = None
+    else:
+        segmentation_model = create_hooknet(HOOKNET_CONFIG)
+        detection_model = Detectron2DetectionPredictor(
+            output_dir="/home/user/tmp/",
+            threshold=0.1,
+            nms_threshold=0.3,
+        )
 
     if source_config is None and image_folder is None and mask_folder is None:
         source_config = GRAND_CHALLENGE_SOURCE_CONFIG

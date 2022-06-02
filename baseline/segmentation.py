@@ -1,13 +1,18 @@
-from wholeslidedata.iterators import create_batch_iterator
-from wholeslidedata.source.configuration.config import insert_paths_into_config
+import numpy as np
+from hooknet.configuration.config import create_hooknet
 from hooknet.inference.apply import _execute_inference_single
 from hooknet.inference.writing import MaskType
-import numpy as np
+from wholeslidedata.iterators import create_batch_iterator
+from wholeslidedata.source.configuration.config import insert_paths_into_config
 
-from .constants import SEGMENTATION_CONFIG
+from .constants import HOOKNET_CONFIG, SEGMENTATION_CONFIG
 
 
 def run_segmentation(model, image_path, mask_path, output_folder, tmp_folder, name):
+    if model is None:
+        model = create_hooknet(HOOKNET_CONFIG)
+
+
     files = [{"name": name, "type": MaskType.PREDICTION}]
     user_config_dict = insert_paths_into_config(
         SEGMENTATION_CONFIG, image_path, mask_path
