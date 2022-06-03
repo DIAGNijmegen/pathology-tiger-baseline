@@ -27,15 +27,8 @@ def inference(iterator, predictor, image_path, output_path):
 
     with WholeSlideImage(image_path) as wsi:
         spacing = wsi.get_real_spacing(0.5)
+        
     print(iterator.dataset.annotation_counts)
-
-    if predictor is None:
-        predictor = Detectron2DetectionPredictor(
-            output_dir="/home/user/tmp/",
-            threshold=0.1,
-            nms_threshold=0.3,
-        )
-
     for x_batch, y_batch, info in tqdm(iterator):
         predictions = predictor.predict_on_batch(x_batch)
         for idx, prediction in enumerate(predictions):
@@ -83,9 +76,6 @@ def inference(iterator, predictor, image_path, output_path):
 
 
 def run_detection(model, image_path, mask_path, output_path):
-
-    print(image_path, mask_path)
-
     user_config_dict = insert_paths_into_config(DETECTION_CONFIG, image_path, mask_path)
 
     iterator = create_batch_iterator(

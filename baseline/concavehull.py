@@ -86,8 +86,9 @@ def calc_ratio(patch):
     counts = np.unique(ratio_patch, return_counts=True)
     try:
         return (100 / counts[1][0]) * counts[1][1]
-    except IndexError:
-        print('Could not calculate ratio, returning 0')
+    except IndexError as ie:
+        print(ie)
+        print('Could not calculate ratio, using 0')
         return 0
 
 def concave_hull(input_file, output_file, input_level, output_level, level_offset, alpha, min_size, bulk_class=1):
@@ -142,7 +143,11 @@ def concave_hull(input_file, output_file, input_level, output_level, level_offse
     else:
         polygons = list(concave_hull)
     
-    # write polygons to annotations and add buffer 
+    buffersize = dist_to_px(250, spacing)
+    polygons = [geometry.Polygon(list(x.buffer(buffersize).exterior.coords)) for x in polygons]
+    print(f'buffersize {buffersize}')
+    print(f'tumor bulk counts {len(polygons)}')
+
     coordinates = []
     for polygon in polygons:
         if polygon.area < min_size_px:

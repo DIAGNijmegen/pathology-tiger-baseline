@@ -69,6 +69,17 @@ def delete_tmp_files():
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (file_path, e))
 
+def delete_data_files():
+    for filename in os.listdir("/home/user/data/"):
+        file_path = os.path.join(str("/home/user/data/"), filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print("Failed to delete %s. Reason: %s" % (file_path, e))
+
 
 def set_tf_gpu_config():
     """Hard-coded GPU limit to balance between tensorflow and Pytorch"""
@@ -111,15 +122,11 @@ def main(
     tf_be_silent()
     segmentation_model = create_hooknet(HOOKNET_CONFIG)
     torch.cuda.set_per_process_memory_fraction(0.55, 0)
-
-    if grandchallenge:
-        detection_model = None
-    else:
-        detection_model = Detectron2DetectionPredictor(
-            output_dir="/home/user/tmp/",
-            threshold=0.1,
-            nms_threshold=0.3,
-        )
+    detection_model = Detectron2DetectionPredictor(
+        output_dir="/home/user/tmp/",
+        threshold=0.1,
+        nms_threshold=0.3,
+    )
 
     if source_config is None and image_folder is None and mask_folder is None:
         source_config = GRAND_CHALLENGE_SOURCE_CONFIG
@@ -203,6 +210,7 @@ def main(
         finally:
             if not grandchallenge:
                 delete_tmp_files()
+                delete_data_files()
                 release_lock_file(lock_file_path=lock_file_path)
         print("--------------")
 

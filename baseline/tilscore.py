@@ -6,7 +6,7 @@ def create_til_score(image_path, xml_path, output_path):
     """slide_level_nms"""
     points = slide_nms(image_path, xml_path, 256)
     wsd_points = to_wsd(points)
-
+    print(len(wsd_points))
     """Compute TIL score and write to output"""
     til_area = dist_to_px(8, 0.5) ** 2
     tils_area = len(wsd_points) * til_area
