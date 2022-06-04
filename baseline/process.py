@@ -69,6 +69,7 @@ def delete_tmp_files():
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (file_path, e))
 
+
 def delete_data_files():
     for filename in os.listdir("/home/user/data/"):
         file_path = os.path.join(str("/home/user/data/"), filename)
@@ -149,6 +150,14 @@ def main(
             )
             tils_output_path = OUTPUT_FOLDER / f"{image_path.stem}_til-score.json"
 
+        if (
+            not grandchallenge
+            and segmentation_path.exists()
+            and detection_output_path.exists()
+            and tils_output_path.exists()
+        ):
+            continue
+
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
         if not grandchallenge and lock_file_path.exists():
             print("Lock file exists, skipping inference.")
@@ -166,7 +175,7 @@ def main(
                 tmp_folder=TMP_FOLDER,
                 name=segmentation_file_name,
             )
-            gc.collect()    
+            gc.collect()
 
             if is_l1(mask_path):
                 print("L1")
