@@ -16,4 +16,4 @@ hooknet:
                 alpha: 0.1
             loss_weights: [0.75, 0.25]  
             merge_type: 'concat'        
-            model_weights: segmodel/hooknetweights/ckpt
+            model_weights: /home/user/pathology-tiger-baseline/baseline/models/segmodel/hooknetweights/ckpt

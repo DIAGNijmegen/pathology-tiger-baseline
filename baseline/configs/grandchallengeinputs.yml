@@ -1,0 +1,15 @@
+source:
+  default:
+    # use 'folders' preset in batch iterator -- images are /input  
+    image_sources:
+        folder: /input/
+
+    # use 'folders' preset in batch iterator -- masks are /input/images
+    annotation_sources:
+        folder: /input/images/
+        
+    # Image/masks names are random on grand-challenge so we have to associate them assuming that there is only 1 image and 1 mask
+    associations:
+        associator: 
+            module: wholeslidedata.source.associations
+            attribute: AnyOneAssociater

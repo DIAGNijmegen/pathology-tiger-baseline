@@ -1,8 +1,13 @@
 wholeslidedata:
     default:
-        yaml_source: slidingwindowdata.yml
+        image_sources:
+            path: 'not set'
+        
+        annotation_sources:
+            path: 'not set'
             
         image_backend: asap
+        
         annotation_backend: 
             attribute: AsapAnnotationParser
 

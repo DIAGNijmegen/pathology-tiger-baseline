@@ -1,10 +1,10 @@
+import json
 import os
 import numpy as np
-import yaml
-import json 
 import glob
 from pathlib import Path
-from typing import List, Dict
+from typing import List
+from wholeslidedata.image.wholeslideimage import WholeSlideImage
 
 
 """General utility"""
@@ -89,3 +89,24 @@ def one_hot_decoding_batch(y_batch):
 def get_centerpoints(point, scalar=4.0, output_size=1030):
     c, r = point.x-output_size//scalar, point.y-output_size//scalar
     return c, r 
+
+def get_mask_area(slide, spacing=16):
+    """Get the size of a mask in pixels where the mask is 1."""
+    mask = WholeSlideImage(slide, backend="asap")
+    patch = mask.get_slide(spacing)
+    counts = np.unique(patch, return_counts=True)
+    down = mask.get_downsampling_from_spacing(spacing)
+    area = counts[1][1] * down ** 2
+    return area
+    
+def write_json(data, path):
+    path = Path(path)
+    with path.open("wt") as handle:
+        json.dump(data, handle, indent=4, sort_keys=False)
+
+
+def is_l1(mask_path):
+    wsm = WholeSlideImage(mask_path, backend="asap")
+    wsm_slide80 = wsm.get_slide(8.0)
+    count = np.count_nonzero(wsm_slide80)
+    return count < 50000

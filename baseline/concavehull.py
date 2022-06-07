@@ -1,7 +1,3 @@
-import argparse
-import multiresolutionimageinterface as mir
-import glob
-import os
 import numpy as np
 from shapely.ops import cascaded_union, polygonize
 import shapely
@@ -10,10 +6,9 @@ import shapely.geometry as geometry
 import xml.etree.ElementTree as ET
 import skimage.morphology
 from scipy.spatial import Delaunay
-from pathlib import Path
 import cv2
 from wholeslidedata.image.wholeslideimage import WholeSlideImage
-from utils import mm2_to_px, dist_to_px
+from .utils import mm2_to_px, dist_to_px
 
 
 # code from: https://github.com/mdiener21/python-geospatial-analysis-cookbook/blob/master/ch08/code/alpha_shape.py
@@ -89,9 +84,14 @@ def calc_ratio(patch):
     ratio_patch = patch.copy()
     ratio_patch[ratio_patch > 1] = 1
     counts = np.unique(ratio_patch, return_counts=True)
-    return (100 / counts[1][0]) * counts[1][1]
+    try:
+        return (100 / counts[1][0]) * counts[1][1]
+    except IndexError as ie:
+        print(ie)
+        print('Could not calculate ratio, using 0')
+        return 0
 
-def concave_hull(input_file, output_dir, input_level, output_level, level_offset, alpha, min_size, bulk_class=1):
+def concave_hull(input_file, output_file, input_level, output_level, level_offset, alpha, min_size, bulk_class=1):
     
     wsi = WholeSlideImage(input_file, backend='asap')
 
@@ -143,17 +143,18 @@ def concave_hull(input_file, output_dir, input_level, output_level, level_offset
     else:
         polygons = list(concave_hull)
     
-    # write polygons to annotations and add buffer
-    buffersize = dist_to_px(250, spacing)    
+    buffersize = dist_to_px(250, spacing)
+    polygons = [geometry.Polygon(list(x.buffer(buffersize).exterior.coords)) for x in polygons]
+    print(f'buffersize {buffersize}')
+    print(f'tumor bulk counts {len(polygons)}')
+
     coordinates = []
     for polygon in polygons:
         if polygon.area < min_size_px:
             continue
 
-
         coordinates.append([[x[0] * 2 ** (input_level + level_offset - output_level),
                              x[1] * 2 ** (input_level + level_offset - output_level)] for x in polygon.boundary.coords[:-1]])
     asap_annot = create_asap_xml_from_coords(coordinates)
 
-    output_filename = os.path.basename(input_file)[:-4]
-    asap_annot.write(os.path.join(output_dir, output_filename + ".xml"))
+    asap_annot.write(output_file)
