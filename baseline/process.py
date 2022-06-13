@@ -156,6 +156,7 @@ def main(
             and detection_output_path.exists()
             and tils_output_path.exists()
         ):
+            print('All files already exists. continue')
             continue
 
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
