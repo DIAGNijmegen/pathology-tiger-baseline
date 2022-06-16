@@ -189,12 +189,14 @@ def main(
                 write_json(0.0, tils_output_path)
             else:
                 print("L2")
+                print('tumor stroma mask')
                 create_tumor_stroma_mask(
                     segmentation_path=segmentation_path,
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
                 )
                 gc.collect()
+                print('detection')
                 run_detection(
                     model=detection_model,
                     image_path=image_path,
@@ -202,6 +204,7 @@ def main(
                     output_path=detection_output_path,
                 )
                 gc.collect()
+                print('computing til score')
                 create_til_score(
                     image_path=image_path,
                     xml_path=ASAP_DETECTION_OUTPUT,
