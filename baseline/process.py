@@ -203,6 +203,7 @@ def main(
                     output_path=detection_output_path,
                 )
                 gc.collect()
+                print('computing til score')
                 create_til_score(
                     image_path=image_path,
                     xml_path=ASAP_DETECTION_OUTPUT,
