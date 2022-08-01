@@ -129,11 +129,13 @@ def delete_data_files():
 @click.option("--source_config", type=Path, required=False)
 @click.option("--image_folder", type=Path, required=False)
 @click.option("--mask_folder", type=Path, required=False)
+@click.option("--resection", type=bool, default=True, required=False)
 @click.option("--grandchallenge", type=bool, default=True, required=False)
 def main(
     source_config: Path = None,
     image_folder: Path = None,
     mask_folder: Path = None,
+    resection: bool = True,
     grandchallenge: bool = True,
 ):
 
@@ -201,6 +203,7 @@ def main(
                     segmentation_path=segmentation_path,
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
+                    resection=resection,
                 )
                 gc.collect()
                 run_detection(
