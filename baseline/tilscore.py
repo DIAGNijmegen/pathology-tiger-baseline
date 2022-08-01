@@ -1,7 +1,9 @@
 from .utils import dist_to_px, get_mask_area, write_json
 from .nms import slide_nms, to_wsd
 from .constants import TUMOR_STROMA_MASK_PATH
+from .utils import timing
 
+@timing
 def create_til_score(image_path, xml_path, output_path):
     """slide_level_nms"""
     points = slide_nms(image_path, xml_path, 256)

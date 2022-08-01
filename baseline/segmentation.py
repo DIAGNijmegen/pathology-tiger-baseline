@@ -12,6 +12,7 @@ from .constants import (
     SEGMENTATION_CONFIG,
 )
 
+from tensorflow.python.keras import backend as K
 
 @click.command()
 @click.option("--image_path", type=Path, required=True)
@@ -20,6 +21,9 @@ from .constants import (
 @click.option("--tmp_folder", type=Path, required=True)
 @click.option("--name", type=str, required=True)
 def run_segmentation(image_path, mask_path, output_folder, tmp_folder, name):
+
+    print(f"Tensorflow GPU available: {K._get_available_gpus()}")
+
     files = [{"name": name, "type": MaskType.PREDICTION}]
     model = create_hooknet(HOOKNET_CONFIG)
     user_config_dict = insert_paths_into_config(

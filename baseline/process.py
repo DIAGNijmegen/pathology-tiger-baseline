@@ -21,6 +21,20 @@ from .constants import (
 import gc
 import subprocess
 
+from .utils import timing
+
+
+def print_std(p: subprocess.Popen):
+
+    if p.stderr is not None:
+        for line in p.stderr.readlines():
+            print(line)
+
+    if p.stdout is not None:
+        for line in p.stdout.readlines():
+            print(line)
+
+@timing
 def run_segmentation(image_path, mask_path, output_folder, tmp_folder, name):
 
     print("running segmentation")
@@ -37,13 +51,10 @@ def run_segmentation(image_path, mask_path, output_folder, tmp_folder, name):
     ]
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
     p.wait()
-    if p.stderr is not None:
-        print(
-            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-        )
+    print_std(p)
 
+@timing
 def run_detection(image_path, mask_path, output_path):
 
     print("running detection")
@@ -58,13 +69,8 @@ def run_detection(image_path, mask_path, output_path):
     ]
 
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-
     p.wait()
-    if p.stderr is not None:
-        print(
-            "/n".join([line.decode("utf-8") for line in p.stderr.readlines()])
-        )
-
+    print_std(p)
 
 def create_lock_file(lock_file_path):
     print(f"Creating lock file: {lock_file_path}")
@@ -211,13 +217,13 @@ def main(
                 )
 
         except Exception as e:
-            print("Exception")
-            print(e)
+            print("Exception occured. Writing empty files")
+            # print(e)
             write_empty_files(
                 detection_output_path=detection_output_path,
                 tils_output_path=tils_output_path,
             )
-            print(traceback.format_exc())
+            # print(traceback.format_exc())
         finally:
             if not grandchallenge:
                 delete_tmp_files()

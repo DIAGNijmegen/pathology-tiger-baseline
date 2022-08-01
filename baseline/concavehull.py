@@ -87,7 +87,7 @@ def calc_ratio(patch):
     try:
         return (100 / counts[1][0]) * counts[1][1]
     except IndexError as ie:
-        print(ie)
+        # print(ie)
         print('Could not calculate ratio, using 0')
         return 0
 
@@ -107,7 +107,8 @@ def concave_hull(input_file, output_file, input_level, output_level, level_offse
     # Ratio decides whether the approach for biopsies or resections is used.
     # A smaller kernel and min_size is used for biopsies.
     wsi_patch = wsi.get_patch(0, 0, wsi_dim[0], wsi_dim[1], spacing, center=False).squeeze()
-    ratio = calc_ratio(wsi_patch)    
+    ratio = calc_ratio(wsi_patch)   
+     
     wsi_patch = np.where(wsi_patch == bulk_class, wsi_patch, 0*wsi_patch)  
     min_size_px = mm2_to_px(1.0, spacing)
     kernel_diameter = dist_to_px(500, spacing)  
