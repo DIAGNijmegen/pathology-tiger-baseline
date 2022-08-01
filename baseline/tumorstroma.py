@@ -6,7 +6,7 @@ from wholeslidedata.source.configuration.config import insert_paths_into_config
 import numpy as np
 from .concavehull import concave_hull
 from .constants import BULK_CONFIG, TUMOR_STROMA_MASK_PATH
-
+from .utils import timing
 
 def _create_tumor_bulk_mask(image_path, annotation_path):
     wsi = WholeSlideImage(image_path, backend="asap")
@@ -78,13 +78,13 @@ def _create_tumor_stroma_mask(segmentation_path, bulk_path):
     bulk_wsm_writer.save()
     bulk_iterator.stop()
 
-
-def create_tumor_stroma_mask(segmentation_path, bulk_xml_path, bulk_mask_path):
-
+@timing
+def create_tumor_stroma_mask(segmentation_path, bulk_xml_path, bulk_mask_path, resection):
     # create tumor bulk
     concave_hull(
         input_file=segmentation_path,
         output_file=bulk_xml_path,
+        resection=resection,
         input_level=6,
         output_level=0,
         level_offset=0,

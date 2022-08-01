@@ -12,7 +12,9 @@ from baseline.wsdetectron2 import Detectron2DetectionPredictor
 
 from .nms import to_wsd
 from .utils import px_to_mm
-
+from pathlib import Path
+import click
+import torch
 
 def inference(iterator, predictor, image_path, output_path):
 
@@ -75,16 +77,29 @@ def inference(iterator, predictor, image_path, output_path):
     print("finished!")
 
 
-def run_detection(model, image_path, mask_path, output_path):
-    user_config_dict = insert_paths_into_config(DETECTION_CONFIG, image_path, mask_path)
+
+@click.command()
+@click.option("--image_path", type=Path, required=True)
+@click.option("--mask_path", type=Path, required=True)
+@click.option("--output_path", type=Path, required=True)
+def run_detection(image_path, mask_path, output_path):
+    print(f"Pytorch GPU available: {torch.cuda.is_available()}")
+    print(image_path, mask_path)
+
+    user_config_dict = insert_paths_into_config(
+        DETECTION_CONFIG, image_path, mask_path
+    )
+
+    model = Detectron2DetectionPredictor(
+        output_dir="/home/user/tmp/",
+        threshold=0.1,
+        nms_threshold=0.3,
+    )
 
     iterator = create_batch_iterator(
         mode="validation",
         user_config=user_config_dict["wholeslidedata"],
-        presets=(
-            "files",
-            "slidingwindow",
-        ),
+        presets=("files", "slidingwindow",),
         cpus=1,
         number_of_batches=-1,
         return_info=True,
@@ -98,3 +113,7 @@ def run_detection(model, image_path, mask_path, output_path):
         output_path=output_path,
     )
     iterator.stop()
+
+
+if __name__ == "__main__":
+    run_detection()

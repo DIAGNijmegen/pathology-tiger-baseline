@@ -4,30 +4,73 @@ from pathlib import Path
 from wholeslidedata.source.configuration.config import get_paths
 import os, shutil
 
-from baseline.wsdetectron2 import Detectron2DetectionPredictor
 from .tilscore import create_til_score
 from .tumorstroma import create_tumor_stroma_mask
 from .utils import is_l1, write_json
-from .segmentation import run_segmentation
-from .detection import run_detection
 import click
-from hooknet.configuration.config import create_hooknet
 from .constants import (
     ASAP_DETECTION_OUTPUT,
     BULK_MASK_PATH,
     BULK_XML_PATH,
     GRAND_CHALLENGE_SOURCE_CONFIG,
-    HOOKNET_CONFIG,
     OUTPUT_FOLDER,
     SEGMENTATION_OUTPUT_FOLDER,
     TMP_FOLDER,
     TUMOR_STROMA_MASK_PATH,
 )
-import tensorflow as tf
-import tensorflow.keras.backend as K
-import torch
 import gc
+import subprocess
 
+from .utils import timing
+
+
+def print_std(p: subprocess.Popen):
+
+    if p.stderr is not None:
+        for line in p.stderr.readlines():
+            print(line)
+
+    if p.stdout is not None:
+        for line in p.stdout.readlines():
+            print(line)
+
+@timing
+def run_segmentation(image_path, mask_path, output_folder, tmp_folder, name):
+
+    print("running segmentation")
+    cmd = [
+        "python3",
+        "-u",
+        "-m",
+        "baseline.segmentation",
+        f"--image_path={image_path}",
+        f"--mask_path={mask_path}",
+        f"--output_folder={output_folder}",
+        f"--tmp_folder={tmp_folder}",
+        f"--name={name}",
+    ]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p.wait()
+    print_std(p)
+
+@timing
+def run_detection(image_path, mask_path, output_path):
+
+    print("running detection")
+    cmd = [
+        "python3",
+        "-u",
+        "-m",
+        "baseline.detection",
+        f"--image_path={image_path}",
+        f"--mask_path={mask_path}",
+        f"--output_path={output_path}",
+    ]
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p.wait()
+    print_std(p)
 
 def create_lock_file(lock_file_path):
     print(f"Creating lock file: {lock_file_path}")
@@ -82,52 +125,20 @@ def delete_data_files():
             print("Failed to delete %s. Reason: %s" % (file_path, e))
 
 
-def set_tf_gpu_config():
-    """Hard-coded GPU limit to balance between tensorflow and Pytorch"""
-    gpus = tf.config.list_physical_devices("GPU")
-    if gpus:
-        try:
-            tf.config.set_logical_device_configuration(
-                gpus[0], [tf.config.LogicalDeviceConfiguration(memory_limit=6024)]
-            )
-            logical_gpus = tf.config.list_logical_devices("GPU")
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-        except RuntimeError as e:
-            # Virtual devices must be set before GPUs have been initialized
-            print(e)
-
-
-def tf_be_silent():
-    """Surpress exessive TF warnings"""
-    try:
-        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-        tf.get_logger().setLevel("ERROR")
-        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-    except Exception as ex:
-        print("failed to silence tf warnings:", str(ex))
-
-
 @click.command()
 @click.option("--source_config", type=Path, required=False)
 @click.option("--image_folder", type=Path, required=False)
 @click.option("--mask_folder", type=Path, required=False)
+@click.option("--resection", type=bool, default=True, required=False)
 @click.option("--grandchallenge", type=bool, default=True, required=False)
 def main(
     source_config: Path = None,
     image_folder: Path = None,
     mask_folder: Path = None,
+    resection: bool = True,
     grandchallenge: bool = True,
 ):
 
-    set_tf_gpu_config()
-    tf_be_silent()
-    segmentation_model = create_hooknet(HOOKNET_CONFIG)
-    torch.cuda.set_per_process_memory_fraction(0.55, 0)
-    detection_model = Detectron2DetectionPredictor(
-        output_dir="/home/user/tmp/",
-        threshold=0.1,
-        nms_threshold=0.3,
-    )
 
     if source_config is None and image_folder is None and mask_folder is None:
         source_config = GRAND_CHALLENGE_SOURCE_CONFIG
@@ -156,6 +167,7 @@ def main(
             and detection_output_path.exists()
             and tils_output_path.exists()
         ):
+            print('All files already exists. continue')
             continue
 
         lock_file_path = OUTPUT_FOLDER / (image_path.stem + ".lock")
@@ -168,7 +180,6 @@ def main(
 
             SEGMENTATION_OUTPUT_FOLDER.mkdir(exist_ok=True, parents=True)
             run_segmentation(
-                model=segmentation_model,
                 image_path=image_path,
                 mask_path=mask_path,
                 output_folder=SEGMENTATION_OUTPUT_FOLDER,
@@ -180,7 +191,6 @@ def main(
             if is_l1(mask_path):
                 print("L1")
                 run_detection(
-                    model=detection_model,
                     image_path=image_path,
                     mask_path=mask_path,
                     output_path=detection_output_path,
@@ -194,11 +204,11 @@ def main(
                     segmentation_path=segmentation_path,
                     bulk_xml_path=BULK_XML_PATH,
                     bulk_mask_path=BULK_MASK_PATH,
+                    resection=resection,
                 )
                 gc.collect()
                 print('detection')
                 run_detection(
-                    model=detection_model,
                     image_path=image_path,
                     mask_path=TUMOR_STROMA_MASK_PATH,
                     output_path=detection_output_path,
@@ -212,13 +222,13 @@ def main(
                 )
 
         except Exception as e:
-            print("Exception")
-            print(e)
+            print("Exception occured. Writing empty files")
+            # print(e)
             write_empty_files(
                 detection_output_path=detection_output_path,
                 tils_output_path=tils_output_path,
             )
-            print(traceback.format_exc())
+            # print(traceback.format_exc())
         finally:
             if not grandchallenge:
                 delete_tmp_files()
