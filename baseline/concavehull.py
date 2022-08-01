@@ -114,11 +114,13 @@ def concave_hull(input_file, output_file, resection, input_level, output_level, 
     kernel_diameter = dist_to_px(500, spacing)  
 
     if resection:
-        print('Processing resection...')
+        print('Processing in resection mode...')
         wsi_patch_indexes = skimage.morphology.remove_small_objects(((wsi_patch == bulk_class)), min_size=mm2_to_px(0.005, spacing), connectivity=2)
         wsi_patch[wsi_patch_indexes==False] = 0
         kernel_diameter = dist_to_px(1000, spacing)
         min_size_px = mm2_to_px(min_size, spacing)
+    else:
+        print('Processing in biopsy mode...')
 
     print('spacing', spacing)
     print(f'min size in pixels {min_size_px}')

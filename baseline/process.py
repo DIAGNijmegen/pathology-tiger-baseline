@@ -222,7 +222,9 @@ def main(
                 )
 
         except Exception as e:
-            print("Exception occured. Writing empty files")
+            print('Exception')
+            print(e)
+            print("Writing empty files...")
             # print(e)
             write_empty_files(
                 detection_output_path=detection_output_path,
